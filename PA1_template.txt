@@ -1,9 +1,4 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 (As taken from the course project description given for "Reproducible Research; Week 2: Project 1")
 
 This assignment makes use of data from a personal activity monitoring
@@ -38,7 +33,8 @@ dataset.
 
 Make sure that you are first in the directory containing the appropriate data file. In this case it is named "activity.csv". As a csv file we will be using "read.csv" to read it into our IDE.
 
-```{r loading and preprocessing the data}
+
+```r
 unzip(zipfile = "activity.zip")
 activity_data <- read.csv("activity.csv", stringsAsFactors = FALSE)
 ```
@@ -48,20 +44,23 @@ activity_data <- read.csv("activity.csv", stringsAsFactors = FALSE)
 We are asked the question of how many steps are taken within a 24 hour period for our given data set? To answer this we will construct a histogram showing the total amount of steps taken in one day on the x-axis. There will be a set of ranges for the total amount of steps taken, and we will get the frequency that a certain amount of steps are taken in a day on the y-axis. 
 
 Dplyr is a good package to simplify our efforts.
-```{r dplyr}
+
+```r
 suppressMessages(require(dplyr))
 require("dplyr", quietly = TRUE)
 ```
 
 NA values should be discarded from our analysis.
 
-```{r}
+
+```r
 activity_clean <- activity_data[complete.cases(activity_data), ]
 ```
 
 Since we want total steps per day, we will group our data by date and then plot it.
 
-```{r}
+
+```r
 total_steps  <-  activity_clean %>% 
                  group_by(date) %>% 
                  summarise(tot_steps = sum(steps))
@@ -74,16 +73,32 @@ hist(total_steps$tot_steps,
     col = cm.colors(5),
     las = 1,
     ylim = c(0, 30))
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-2-1.png)
+
+```r
 mean(total_steps$tot_steps)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(total_steps$tot_steps)
+```
+
+```
+## [1] 10765
 ```
 
 ## What is the average daily activity pattern?
 
 We'll use ggplot2 this time to figure out the average daily activity pattern; that is, average amount of steps taken in a given interval. 
 
-```{r average daily activity pattern}
+
+```r
 suppressMessages(library(ggplot2))
 library(ggplot2)
 
@@ -95,31 +110,42 @@ ggplot(data = activity_pattern, aes(x = interval, y = steps)) +
     ylab("Average Steps Taken In Interval")
 ```
 
+![](PA1_template_files/figure-html/average daily activity pattern-1.png)
+
 To figure out the 5-minute interval containing the maximum number of steps we will use the "which.max()" function.
 
-```{r}
+
+```r
 activity_pattern[which.max(activity_pattern$steps), ]
+```
+
+```
+##     interval    steps
+## 104      835 206.1698
 ```
 
 ## Imputing missing values
 
 Missing values can skew the data unfavorably in certain circumstances. It is often better to impute missing values so that a better estimate or analysis can be obtained. We will utilize a random uniform distribution which will be based off of the steps taken in "activity_data". Basically, we figure out the maximum and minimum number of steps in our original data set and make a uniform distribution between those two points with equal number of rows to the original set, then we will fill in NA values with our imputed values.
 
-```{r}
+
+```r
 set.seed(1111)
 set_uniform <- floor(runif(nrow(activity_data), min = min(activity_data$steps, na.rm = TRUE), max = max(activity_data$steps, na.rm = TRUE) / 10))
 ```
 
 We will get an index of NA values and replace them with our imputed values.
 
-```{r}
+
+```r
 activity_NA  <- which(is.na(activity_data$steps))
 activity_data$steps[activity_NA]  <- set_uniform[activity_NA]
 ```
 
 Using dplyr again, we will get the sum of steps and then plot the data.
 
-```{r}
+
+```r
 imputed_data <- activity_data %>%
                 group_by(date) %>%
                 summarise(tot_steps = sum(steps))
@@ -133,22 +159,39 @@ hist(imputed_data$tot_steps,
     col = cm.colors(10),
     las = 1,
     ylim = c(0, 25))
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png)
+
+```r
 mean(total_steps$tot_steps)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(total_steps$tot_steps)
+```
+
+```
+## [1] 10765
 ```
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
 To compare activity on weekdays or weekends, we will first change the "date" variable in our data to be of "date" class.
 
-```{r}
+
+```r
 activity_data$date <- as.POSIXct(activity_data$date)
 ```
 
 We will use an if statement to sort and sapply to a new variable column "day_type" our dataset. In this manner we can then begin to plot the data according to the day type.
 
-```{r}
+
+```r
 day_type <- function(date) {
     day <- weekdays(date)
     if (day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
@@ -165,7 +208,8 @@ activity_data$day_type  <- as.factor(activity_data$day_type)
 
 Here we will again summarize our factored and grouped data to get a total number of steps, so that we can plot our totals.
 
-```{r}
+
+```r
 day_type_steps <- activity_data %>% 
                   group_by(day_type, interval) %>% 
                   summarise(tot_step = sum(steps))
@@ -173,8 +217,11 @@ day_type_steps <- activity_data %>%
 
 Plotting the graph in ggplot2.
 
-```{r}
+
+```r
 ggplot(day_type_steps, aes(interval, tot_step)) + geom_line(color = 'blue', size = 1) + facet_grid(day_type ~ .) + xlab("Interval") + ylab("Total Number Of Steps In Interval")
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-10-1.png)
 
 We can see that, overall, there is much more activity during the weekday than the weekend.
